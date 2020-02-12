@@ -1,75 +1,61 @@
 
-
-
-
-
-
-
-
 'use strict';
-
+const mongoose =require('mongoose')
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-let SECRET = 'coolsecret';
+let SECRET = 'afterAllThisTime';
 
-let db = {};
-let users = {};
-
-users.save = async function (record) {
-
-  if (!db[record.username]) {
-    record.password = await bcrypt.hashSync(record.password, 5);
-
-    db[record.username] = record;
-    return record;
-  }
-
-  return Promise.reject();
-}
-
-users.authenticateBasic = async function(user,pass) {
-  let valid = await bcrypt.compare(pass, db[user].password);
-  return valid ? db[user] : Promise.reject();
-}
-
-users.generateToken = function(user) {
-  let token = jwt.sign({ username: user.username}, SECRET);
-  return token;
-}
-
-users.list = () => db;
-
-module.exports = users;
-// 'use strict';
-// // npm install jsonwebtoken
-// //   npm install bcryptjs
-// //  npm install base-64 
-// const bcrypt = require('bcryptjs'); 
-// const jwt = require('jsonwebtoken');
-// let SECRET ='coolsecret';
-// let db ={};
+// let db = {};
 // let users = {};
-// users.save = async function (record){
-//     if(!db[record.username]){
-//         record.password = await bcrypt.hashSync(record.password ,5);  // here we hashing  the password so that mean it will not be readable for 
-//         db[record.username] = record ;
-//         return record ;
-//     }
-//     return Promise.reject() ;
+const users = new mongoose.Schema({
+  username: { type: String, required: true },
+  password: { type: String, required: true } ,
+  
+});
+// hashing password  without using mongodb 
+// users.save = async function (record) {
+
+//   if (!db[record.username]) {
+//     record.password = await bcrypt.hashSync(record.password, 5);
+
+//     db[record.username] = record;
+//     return record;
+//   }
+
+//   return Promise.reject();
 // }
+// with mongodb 
 
-
-// users.authenticateBasic = async function(user , pass){
-//     let valid = await bcrypt.compare(pass , db[user].password);
-//     return valid ? db[user] : Promise.reject() ;
-// } 
-// users.generateToken = function(user){
-//     let token = jwt.sign({ username : user.username},SECRET); //sign : two factor layer which says who am i what is my secret code 
-//     return token ;
+users.pre('save', async function(){
+  if (!users.username) {
+  this.password = await bcrypt.hash(this.password, 5);
+  }
+});
+// compare  password  without using mongodb 
+// users.authenticateBasic = async function(user,pass) {
+//   let valid = await bcrypt.compare(pass, db[user].password);
+//   return valid ? db[user] : Promise.reject();
 // }
-// users.list =()=> db ;
+// compare  password after using mongodb 
 
-// module.exports = users ;
+users.statics.authenticateBasic = async function(username , password){
+  let userName = { username };
+  return this.findOne(userName)
+    .then(user => user && user.comparePass(password))
+    .catch(error => { throw error; });
+} ;
+users.methods.comparePass = function (password) {
+  return bcrypt.compare(password, this.password)
+    .then(valid => valid ? this : null);
+};
+//  generateToken after using mongodb and having _id
+users.methods.generateToken = function () {
+  let token = jwt.sign({id : this._id}, SECRET);
+  return token ;
+};
+
+module.exports = mongoose.model('users', users);
+
 
 
