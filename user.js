@@ -11,9 +11,9 @@ let SECRET = 'afterAllThisTime';
 const users = new mongoose.Schema({
   username: { type: String, required: true },
   password: { type: String, required: true } ,
-  
+
 });
-// hashing password  without using mongodb 
+// hashing password  without using mongodb
 // users.save = async function (record) {
 
 //   if (!db[record.username]) {
@@ -25,19 +25,19 @@ const users = new mongoose.Schema({
 
 //   return Promise.reject();
 // }
-// with mongodb 
+// with mongodb
 
 users.pre('save', async function(){
   if (!users.username) {
-  this.password = await bcrypt.hash(this.password, 5);
+    this.password = await bcrypt.hash(this.password, 5);
   }
 });
-// compare  password  without using mongodb 
+// compare  password  without using mongodb
 // users.authenticateBasic = async function(user,pass) {
 //   let valid = await bcrypt.compare(pass, db[user].password);
 //   return valid ? db[user] : Promise.reject();
 // }
-// compare  password after using mongodb 
+// compare  password after using mongodb
 
 users.statics.authenticateBasic = async function(username , password){
   let userName = { username };
